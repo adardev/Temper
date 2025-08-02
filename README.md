@@ -1,2 +1,4 @@
-# Temper
-calendar managment and to do lists, im coming for you morgen
+Web: React + TypeScript
+Desktop: Tauri + React + TypeScript  
+Mobile: React Native + TypeScript
+Backend: Node.js + Express/Rust
