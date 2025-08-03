@@ -1,3 +1,4 @@
+@import "tailwindcss";
 @import "@fontsource/poppins";
 @theme {
     --color-primary: #18cda9;
@@ -8,5 +9,5 @@
     --color-backgroundSecondary: #003b41;
 }
 body {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Montserrat Variable', sans-serif;
 }
