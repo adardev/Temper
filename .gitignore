@@ -3,4 +3,4 @@
 .idea/
 /.pnp
 .pnp.js
-.package-lock.json
+package-lock.json
