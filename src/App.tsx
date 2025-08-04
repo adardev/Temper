@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase, Task } from './lib/supabase'
 import './styles/global.css'
-import GoogleCalendarPanel from './components/GoogleCalendarPanel'
+import { useGoogleCalendar } from './hooks/useGoogleCalendar'
 
 function App() {
     const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
@@ -103,7 +103,6 @@ function App() {
             console.error('Error updating task:', error)
         }
     }
-
 
     const signInWithEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
         try {
@@ -246,8 +245,7 @@ function App() {
             </div>
 
             <TaskPanel tasks={tasks} addTask={addTask} toggleTask={toggleTask} />
-            <CalendarPanel />
-            <GoogleCalendarPanel />
+            <CalendarPanel user={user} />
         </div>
     )
 }
@@ -443,21 +441,141 @@ function TaskPanel({ tasks, addTask, toggleTask }: TaskPanelProps) {
     )
 }
 
-// Panel del calendario
-function CalendarPanel() {
+// Panel del calendario con integración de Google Calendar
+interface CalendarPanelProps {
+    user: User
+}
+
+function CalendarPanel({ user }: CalendarPanelProps) {
+    const [accessToken, setAccessToken] = useState<string | null>(null)
+    const [currentDate, setCurrentDate] = useState(new Date())
+
+    // Obtener token de Google
+    useEffect(() => {
+        const getSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            setAccessToken(session?.provider_token ?? null)
+        }
+        getSession()
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            (event, session) => {
+                setAccessToken(session?.provider_token ?? null)
+            }
+        )
+
+        return () => subscription.unsubscribe()
+    }, [])
+
+    const { isLoaded, events, loading, error } = useGoogleCalendar(accessToken)
+
+    // Función para obtener eventos del día específico
+    const getEventsForDay = (day: number) => {
+        if (!events) return []
+
+        const year = currentDate.getFullYear()
+        const month = currentDate.getMonth()
+        const targetDate = new Date(year, month, day)
+        const dayStart = new Date(targetDate)
+        dayStart.setHours(0, 0, 0, 0)
+        const dayEnd = new Date(targetDate)
+        dayEnd.setHours(23, 59, 59, 999)
+
+        return events.filter(event => {
+            let eventDate
+            if (event.start.dateTime) {
+                eventDate = new Date(event.start.dateTime)
+            } else if (event.start.date) {
+                eventDate = new Date(event.start.date)
+            } else {
+                return false
+            }
+
+            return eventDate >= dayStart && eventDate <= dayEnd
+        })
+    }
+
+    // Generar días del mes
+    const generateCalendarDays = () => {
+        const year = currentDate.getFullYear()
+        const month = currentDate.getMonth()
+        const firstDay = new Date(year, month, 1)
+        const lastDay = new Date(year, month + 1, 0)
+        const daysInMonth = lastDay.getDate()
+        const startingDayOfWeek = (firstDay.getDay() + 6) % 7 // Lunes = 0
+
+        const days = []
+
+        // Días en blanco al inicio
+        for (let i = 0; i < startingDayOfWeek; i++) {
+            days.push(null)
+        }
+
+        // Días del mes
+        for (let day = 1; day <= daysInMonth; day++) {
+            days.push(day)
+        }
+
+        // Completar hasta 42 días (6 semanas)
+        while (days.length < 42) {
+            days.push(null)
+        }
+
+        return days
+    }
+
+    const navigateMonth = (direction: 'prev' | 'next') => {
+        setCurrentDate(prev => {
+            const newDate = new Date(prev)
+            if (direction === 'prev') {
+                newDate.setMonth(prev.getMonth() - 1)
+            } else {
+                newDate.setMonth(prev.getMonth() + 1)
+            }
+            return newDate
+        })
+    }
+
+    const goToToday = () => {
+        setCurrentDate(new Date())
+    }
+
+    const monthNames = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ]
+
+    const today = new Date()
+    const calendarDays = generateCalendarDays()
+
     return (
         <div className="flex-1 flex flex-col bg-backgroundSecondary">
             <div className="p-6 border-b border-neutral">
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-bold text-primary">Calendario</h1>
                     <div className="flex items-center space-x-4">
-                        <button className="px-4 py-2 border border-neutral rounded bg-backgroundPrimary text-white hover:bg-primary hover:text-background transition-colors">
+                        <button
+                            onClick={goToToday}
+                            className="px-4 py-2 border border-neutral rounded bg-backgroundPrimary text-white hover:bg-primary hover:text-background transition-colors"
+                        >
                             Hoy
                         </button>
                         <div className="flex items-center space-x-2">
-                            <button className="p-2 hover:bg-backgroundPrimary rounded transition-colors text-white">←</button>
-                            <span className="text-lg font-semibold text-white">Agosto 2025</span>
-                            <button className="p-2 hover:bg-backgroundPrimary rounded transition-colors text-white">→</button>
+                            <button
+                                onClick={() => navigateMonth('prev')}
+                                className="p-2 hover:bg-backgroundPrimary rounded transition-colors text-white"
+                            >
+                                ←
+                            </button>
+                            <span className="text-lg font-semibold text-white min-w-[200px] text-center">
+                                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                            </span>
+                            <button
+                                onClick={() => navigateMonth('next')}
+                                className="p-2 hover:bg-backgroundPrimary rounded transition-colors text-white"
+                            >
+                                →
+                            </button>
                         </div>
                         <select className="border border-neutral rounded px-3 py-2 bg-backgroundPrimary text-white">
                             <option>Mes</option>
@@ -466,27 +584,67 @@ function CalendarPanel() {
                         </select>
                     </div>
                 </div>
+
+                {/* Indicador de conexión con Google Calendar */}
+                <div className="mt-2 flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full ${accessToken ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-sm text-gray-300">
+                        {accessToken ? 'Conectado con Google Calendar' : 'Google Calendar no conectado'}
+                    </span>
+                    {loading && <span className="text-sm text-primary">Sincronizando...</span>}
+                    {error && <span className="text-sm text-red-400">{error}</span>}
+                </div>
             </div>
 
             <div className="flex-1 p-6">
                 <div className="h-full bg-backgroundPrimary rounded-lg border border-neutral p-4">
                     <div className="grid grid-cols-7 gap-1 h-full">
+                        {/* Cabeceras de días */}
                         {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
                             <div key={day} className="p-2 text-center font-semibold text-primary border-b border-neutral">
                                 {day}
                             </div>
                         ))}
 
-                        {Array.from({ length: 35 }, (_, i) => (
-                            <div key={i} className="p-2 border border-neutral bg-backgroundSecondary hover:bg-primary/10 transition-colors cursor-pointer">
-                                <span className="text-sm text-white">{i + 1}</span>
-                                {i === 2 && (
-                                    <div className="mt-1 bg-primary text-background text-xs px-1 py-0.5 rounded">
-                                        Reunión
+                        {/* Días del calendario */}
+                        {calendarDays.map((day, index) => {
+                            if (!day) {
+                                return <div key={index} className="p-2 border border-neutral bg-backgroundSecondary opacity-30"></div>
+                            }
+
+                            const dayEvents = getEventsForDay(day)
+                            const isToday = today.getDate() === day &&
+                                today.getMonth() === currentDate.getMonth() &&
+                                today.getFullYear() === currentDate.getFullYear()
+
+                            return (
+                                <div key={index} className={`p-2 border border-neutral bg-backgroundSecondary hover:bg-primary/10 transition-colors cursor-pointer relative ${isToday ? 'ring-2 ring-primary' : ''}`}>
+                                    <span className={`text-sm font-medium ${isToday ? 'text-primary font-bold' : 'text-white'}`}>
+                                        {day}
+                                    </span>
+
+                                    {/* Mostrar eventos de Google Calendar */}
+                                    <div className="mt-1 space-y-1">
+                                        {dayEvents.slice(0, 3).map((event, eventIndex) => (
+                                            <div
+                                                key={event.id}
+                                                className="bg-blue-600 text-white text-xs px-1 py-0.5 rounded truncate"
+                                                title={`${event.summary || 'Evento sin título'}${event.start.dateTime ? ' - ' + new Date(event.start.dateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}`}
+                                            >
+                                                {event.summary || 'Evento'}
+                                            </div>
+                                        ))}
+
+                                        {/* Indicador si hay más eventos */}
+                                        {dayEvents.length > 3 && (
+                                            <div className="text-xs text-gray-300 text-center">
+                                                +{dayEvents.length - 3} más
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                        ))}
+                                </div>
+                            )
+                        })}
                     </div>
                 </div>
             </div>

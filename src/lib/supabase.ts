@@ -34,13 +34,13 @@ export interface CalendarEvent {
     updated_at: string
 }
 
-// Funciones de autenticación
+// Funciones de autenticación mejoradas
 export const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
             scopes: 'https://www.googleapis.com/auth/calendar.readonly',
-            redirectTo: `${window.location.origin}/auth/callback`
+            redirectTo: `${window.location.origin}/`
         }
     })
     return { data, error }
@@ -59,5 +59,17 @@ export const signUpWithEmail = async (email: string, password: string) => {
         email,
         password
     })
+    return { data, error }
+}
+
+// Función para obtener el token de Google
+export const getGoogleToken = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    return session?.provider_token || null
+}
+
+// Función para refrescar la sesión
+export const refreshSession = async () => {
+    const { data, error } = await supabase.auth.refreshSession()
     return { data, error }
 }
