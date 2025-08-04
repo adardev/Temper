@@ -22,34 +22,13 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, user, signOut }: SidebarP
                 </button>
                 {sidebarOpen && (
                     <div>
-                        <h2 className="text-xl font-bold mt-2 text-primary">Mi App</h2>
+                        <h2 className="text-xl font-bold mt-2 text-primary">Temper</h2>
                         <p className="text-gray-300 text-sm">{user.email}</p>
                     </div>
                 )}
             </div>
 
             <nav className="p-4">
-                <ul className="space-y-2">
-                    <li>
-                        <a href="#" className="flex items-center p-2 rounded hover:bg-backgroundSecondary transition-colors">
-                            <span className="text-xl">🏠</span>
-                            {sidebarOpen && <span className="ml-3">Inicio</span>}
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" className="flex items-center p-2 rounded hover:bg-backgroundSecondary transition-colors">
-                            <span className="text-xl">✓</span>
-                            {sidebarOpen && <span className="ml-3">Tareas</span>}
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" className="flex items-center p-2 rounded hover:bg-backgroundSecondary transition-colors">
-                            <span className="text-xl">📅</span>
-                            {sidebarOpen && <span className="ml-3">Calendario</span>}
-                        </a>
-                    </li>
-                </ul>
-
                 {sidebarOpen && (
                     <button
                         onClick={signOut}
