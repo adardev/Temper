@@ -1,0 +1,69 @@
+import React, { useState } from 'react'
+import { Task } from '../lib/supabase'
+
+interface TaskPanelProps {
+    tasks: Task[]
+    addTask: (taskText: string) => Promise<void>
+    toggleTask: (taskId: string, completed: boolean) => Promise<void>
+}
+
+export function TaskPanel({ tasks, addTask, toggleTask }: TaskPanelProps) {
+    const [newTask, setNewTask] = useState<string>('')
+
+    const handleAddTask = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (newTask.trim()) {
+            addTask(newTask.trim())
+            setNewTask('')
+        }
+    }
+
+    return (
+        <div className="w-80 bg-backgroundPrimary border-r border-neutral flex flex-col">
+            <div className="p-4 border-b border-neutral">
+                <h3 className="text-lg font-semibold text-primary">Tareas</h3>
+                <form onSubmit={handleAddTask} className="mt-2">
+                    <input
+                        type="text"
+                        placeholder="Nueva tarea..."
+                        value={newTask}
+                        onChange={(e) => setNewTask(e.target.value)}
+                        className="w-full p-2 border border-neutral rounded mb-2 bg-backgroundSecondary text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <button
+                        type="submit"
+                        className="w-full bg-primary text-background font-semibold px-4 py-2 rounded hover:bg-secondary transition-colors"
+                    >
+                        + Agregar Tarea
+                    </button>
+                </form>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-3">
+                    {tasks.map((task) => (
+                        <div key={task.id} className="bg-backgroundSecondary border border-neutral rounded-lg p-3">
+                            <div className="flex items-center justify-between">
+                                <span className={`font-medium ${task.completed ? 'text-gray-400 line-through' : 'text-white'}`}>
+                                    {task.title}
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    checked={task.completed}
+                                    onChange={(e) => toggleTask(task.id, e.target.checked)}
+                                    className="accent-primary"
+                                />
+                            </div>
+                            <p className="text-sm text-gray-400 mt-1">
+                                {new Date(task.created_at).toLocaleDateString()}
+                            </p>
+                        </div>
+                    ))}
+                    {tasks.length === 0 && (
+                        <p className="text-gray-400 text-center py-8">No hay tareas aún</p>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}
