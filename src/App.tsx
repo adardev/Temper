@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { User } from '@supabase/supabase-js'
-import { supabase, Task } from './lib/supabase'
+import { supabase, Task, Folder, List } from './lib/supabase'
 import './styles/global.css'
 import { Sidebar } from './components/Sidebar'
 import { AuthForm } from './components/AuthForm'
@@ -11,7 +11,10 @@ import { CalendarPanel } from './components/CalendarPanel'
 function App() {
     const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
     const [user, setUser] = useState<User | null>(null)
+    const [folders, setFolders] = useState<Folder[]>([])
+    const [lists, setLists] = useState<List[]>([])
     const [tasks, setTasks] = useState<Task[]>([])
+    const [selectedList, setSelectedList] = useState<string | null>(null)
     const [loading, setLoading] = useState<boolean>(true)
 
     // Verificar autenticación
@@ -33,9 +36,45 @@ function App() {
 
     useEffect(() => {
         if (user) {
+            fetchFolders()
+            fetchLists()
             fetchTasks()
         }
     }, [user])
+
+    const fetchFolders = async (): Promise<void> => {
+        if (!user) return
+
+        try {
+            const { data, error } = await supabase
+                .from('folders')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: true })
+
+            if (error) throw error
+            setFolders(data || [])
+        } catch (error) {
+            console.error('Error fetching folders:', error)
+        }
+    }
+
+    const fetchLists = async (): Promise<void> => {
+        if (!user) return
+
+        try {
+            const { data, error } = await supabase
+                .from('lists')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: true })
+
+            if (error) throw error
+            setLists(data || [])
+        } catch (error) {
+            console.error('Error fetching lists:', error)
+        }
+    }
 
     const fetchTasks = async (): Promise<void> => {
         if (!user) return
@@ -54,7 +93,56 @@ function App() {
         }
     }
 
-    const addTask = async (taskText: string): Promise<void> => {
+    const addFolder = async (folderName: string, color: string = '#6366f1'): Promise<void> => {
+        if (!user) return
+
+        try {
+            const { data, error } = await supabase
+                .from('folders')
+                .insert([
+                    {
+                        name: folderName,
+                        color,
+                        user_id: user.id
+                    }
+                ])
+                .select()
+
+            if (error) throw error
+            if (data) {
+                setFolders([...folders, ...data])
+            }
+        } catch (error) {
+            console.error('Error adding folder:', error)
+        }
+    }
+
+    const addList = async (listName: string, folderId: string, color: string = '#10b981'): Promise<void> => {
+        if (!user) return
+
+        try {
+            const { data, error } = await supabase
+                .from('lists')
+                .insert([
+                    {
+                        name: listName,
+                        folder_id: folderId,
+                        color,
+                        user_id: user.id
+                    }
+                ])
+                .select()
+
+            if (error) throw error
+            if (data) {
+                setLists([...lists, ...data])
+            }
+        } catch (error) {
+            console.error('Error adding list:', error)
+        }
+    }
+
+    const addTask = async (taskText: string, listId: string): Promise<void> => {
         if (!user) return
 
         try {
@@ -63,6 +151,7 @@ function App() {
                 .insert([
                     {
                         title: taskText,
+                        list_id: listId,
                         user_id: user.id,
                         completed: false
                     }
@@ -105,6 +194,42 @@ function App() {
             }
         } catch (error) {
             console.error('Error updating task:', error)
+        }
+    }
+
+    const deleteFolder = async (folderId: string): Promise<void> => {
+        try {
+            const { error } = await supabase
+                .from('folders')
+                .delete()
+                .eq('id', folderId)
+
+            if (error) throw error
+
+            setFolders(folders.filter(folder => folder.id !== folderId))
+            setLists(lists.filter(list => list.folder_id !== folderId))
+        } catch (error) {
+            console.error('Error deleting folder:', error)
+        }
+    }
+
+    const deleteList = async (listId: string): Promise<void> => {
+        try {
+            const { error } = await supabase
+                .from('lists')
+                .delete()
+                .eq('id', listId)
+
+            if (error) throw error
+
+            setLists(lists.filter(list => list.id !== listId))
+            setTasks(tasks.filter(task => task.list_id !== listId))
+
+            if (selectedList === listId) {
+                setSelectedList(null)
+            }
+        } catch (error) {
+            console.error('Error deleting list:', error)
         }
     }
 
@@ -201,9 +326,23 @@ function App() {
                 setSidebarOpen={setSidebarOpen}
                 user={user}
                 signOut={signOut}
+                folders={folders}
+                lists={lists}
+                addFolder={addFolder}
+                addList={addList}
+                deleteFolder={deleteFolder}
+                deleteList={deleteList}
+                selectedList={selectedList}
+                setSelectedList={setSelectedList}
             />
-            <TaskPanel tasks={tasks} addTask={addTask} toggleTask={toggleTask} />
-            <CalendarPanel/>
+            <TaskPanel
+                tasks={tasks.filter(task => selectedList ? task.list_id === selectedList : false)}
+                addTask={addTask}
+                toggleTask={toggleTask}
+                selectedList={selectedList}
+                lists={lists}
+            />
+            <CalendarPanel user={user}/>
             <GoogleCalendarPanel user={user} />
         </div>
     )

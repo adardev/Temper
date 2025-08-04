@@ -1,27 +1,51 @@
 import React, { useState } from 'react'
-import { Task } from '../lib/supabase'
+import { Task, List } from '../lib/supabase'
 
 interface TaskPanelProps {
     tasks: Task[]
-    addTask: (taskText: string) => Promise<void>
+    addTask: (taskText: string, listId: string) => Promise<void>
     toggleTask: (taskId: string, completed: boolean) => Promise<void>
+    selectedList: string | null
+    lists: List[]
 }
 
-export function TaskPanel({ tasks, addTask, toggleTask }: TaskPanelProps) {
+export function TaskPanel({ tasks, addTask, toggleTask, selectedList, lists }: TaskPanelProps) {
     const [newTask, setNewTask] = useState<string>('')
+
+    const selectedListData = lists.find(list => list.id === selectedList)
 
     const handleAddTask = (e: React.FormEvent) => {
         e.preventDefault()
-        if (newTask.trim()) {
-            addTask(newTask.trim())
+        if (newTask.trim() && selectedList) {
+            addTask(newTask.trim(), selectedList)
             setNewTask('')
         }
+    }
+
+    if (!selectedList) {
+        return (
+            <div className="w-80 bg-backgroundPrimary border-r border-neutral flex flex-col items-center justify-center">
+                <div className="text-center p-8">
+                    <div className="text-6xl mb-4">📝</div>
+                    <h3 className="text-lg font-semibold text-primary mb-2">Selecciona una lista</h3>
+                    <p className="text-gray-400">Elige una lista del sidebar para ver y agregar tareas</p>
+                </div>
+            </div>
+        )
     }
 
     return (
         <div className="w-80 bg-backgroundPrimary border-r border-neutral flex flex-col">
             <div className="p-4 border-b border-neutral">
-                <h3 className="text-lg font-semibold text-primary">Tareas</h3>
+                <div className="flex items-center gap-2 mb-2">
+                    <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: selectedListData?.color || '#10b981' }}
+                    />
+                    <h3 className="text-lg font-semibold text-primary">
+                        {selectedListData?.name || 'Lista'}
+                    </h3>
+                </div>
                 <form onSubmit={handleAddTask} className="mt-2">
                     <input
                         type="text"

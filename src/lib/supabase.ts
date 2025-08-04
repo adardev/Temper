@@ -10,9 +10,29 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Tipos para la base de datos
+export interface Folder {
+    id: string
+    user_id: string
+    name: string
+    color: string
+    created_at: string
+    updated_at: string
+}
+
+export interface List {
+    id: string
+    user_id: string
+    folder_id: string
+    name: string
+    color: string
+    created_at: string
+    updated_at: string
+}
+
 export interface Task {
     id: string
     user_id: string
+    list_id: string
     title: string
     description?: string
     completed: boolean
