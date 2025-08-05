@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { Task, List } from '../lib/supabase'
-
 interface TaskPanelProps {
     tasks: Task[]
     addTask: (taskText: string, listId: string) => Promise<void>
@@ -8,12 +7,9 @@ interface TaskPanelProps {
     selectedList: string | null
     lists: List[]
 }
-
 export function TaskPanel({ tasks, addTask, toggleTask, selectedList, lists }: TaskPanelProps) {
     const [newTask, setNewTask] = useState<string>('')
-
     const selectedListData = lists.find(list => list.id === selectedList)
-
     const handleAddTask = (e: React.FormEvent) => {
         e.preventDefault()
         if (newTask.trim() && selectedList) {
@@ -21,7 +17,6 @@ export function TaskPanel({ tasks, addTask, toggleTask, selectedList, lists }: T
             setNewTask('')
         }
     }
-
     if (!selectedList) {
         return (
             <div className="w-80 bg-backgroundPrimary border-r border-neutral flex flex-col items-center justify-center">
@@ -33,7 +28,6 @@ export function TaskPanel({ tasks, addTask, toggleTask, selectedList, lists }: T
             </div>
         )
     }
-
     return (
         <div className="w-80 bg-backgroundPrimary border-r border-neutral flex flex-col">
             <div className="p-4 border-b border-neutral">
@@ -62,7 +56,6 @@ export function TaskPanel({ tasks, addTask, toggleTask, selectedList, lists }: T
                     </button>
                 </form>
             </div>
-
             <div className="flex-1 overflow-y-auto p-4">
                 <div className="space-y-3">
                     {tasks.map((task) => (

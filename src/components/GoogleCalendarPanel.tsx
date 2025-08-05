@@ -1,35 +1,27 @@
 import React, { useEffect, useState } from 'react'
 import { useGoogleCalendar } from '../hooks/useGoogleCalendar'
 import { supabase } from '../lib/supabase'
-
 export default function GoogleCalendarPanel() {
     const [accessToken, setAccessToken] = useState<string | null>(null)
-
-    // Obtener token actual de Supabase
     useEffect(() => {
         const getToken = async () => {
             const { data: { session } } = await supabase.auth.getSession()
             setAccessToken(session?.provider_token ?? null)
         }
         getToken()
-
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (event, session) => {
                 setAccessToken(session?.provider_token ?? null)
             }
         )
-
         return () => subscription.unsubscribe()
     }, [])
-
     const { isLoaded, events, loading, error, fetchEvents } = useGoogleCalendar(accessToken)
-
     const handleRefresh = () => {
         if (fetchEvents) {
             fetchEvents()
         }
     }
-
     if (!accessToken) {
         return (
             <div className="w-96 bg-backgroundPrimary border-l border-neutral flex flex-col p-4 text-white">
@@ -43,7 +35,6 @@ export default function GoogleCalendarPanel() {
             </div>
         )
     }
-
     return (
         <div className="w-96 bg-backgroundPrimary border-l border-neutral flex flex-col p-4 text-white">
             <div className="flex items-center justify-between mb-4">
@@ -59,25 +50,21 @@ export default function GoogleCalendarPanel() {
                     </svg>
                 </button>
             </div>
-
             {error && (
                 <div className="mb-4 p-3 bg-red-900/20 border border-red-600 text-red-400 rounded text-sm">
                     {error}
                 </div>
             )}
-
             {loading && (
                 <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
             )}
-
             {!loading && !error && events.length === 0 && (
                 <div className="flex items-center justify-center h-32 bg-backgroundSecondary rounded-lg border border-neutral">
                     <p className="text-gray-300">No hay eventos próximos</p>
                 </div>
             )}
-
             <ul className="space-y-3 overflow-y-auto max-h-[60vh]">
                 {events.map((event) => {
                     const startTime = event.start.dateTime
@@ -85,7 +72,6 @@ export default function GoogleCalendarPanel() {
                         : event.start.date
                             ? new Date(event.start.date)
                             : null
-
                     return (
                         <li key={event.id} className="border border-neutral rounded-lg p-3 bg-backgroundSecondary hover:bg-backgroundSecondary/80 transition-colors">
                             <div className="font-semibold text-white truncate" title={event.summary || 'Sin título'}>

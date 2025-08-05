@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, {useState} from 'react'
 
 interface AuthFormProps {
     signIn: (email: string, password: string) => Promise<{ error: string | null }>
@@ -6,25 +6,20 @@ interface AuthFormProps {
     signInWithGoogle: () => Promise<void>
 }
 
-export function AuthForm({ signIn, signUp, signInWithGoogle }: AuthFormProps) {
+export function AuthForm({signIn, signUp, signInWithGoogle}: AuthFormProps) {
     const [email, setEmail] = useState<string>('')
     const [password, setPassword] = useState<string>('')
     const [isSignUp, setIsSignUp] = useState<boolean>(false)
     const [error, setError] = useState<string>('')
     const [loading, setLoading] = useState<boolean>(false)
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
         setLoading(true)
-
-        console.log('Form submitted:', { email, isSignUp })
-
         try {
             const result = isSignUp
                 ? await signUp(email, password)
                 : await signIn(email, password)
-
             if (result.error) {
                 setError(result.error)
             }
@@ -35,20 +30,17 @@ export function AuthForm({ signIn, signUp, signInWithGoogle }: AuthFormProps) {
             setLoading(false)
         }
     }
-
     return (
         <div className="h-screen flex items-center justify-center bg-background">
             <div className="bg-backgroundPrimary p-8 rounded-lg shadow-lg w-96 border border-neutral">
                 <h2 className="text-2xl font-bold text-primary mb-6 text-center">
                     {isSignUp ? 'Crear Cuenta' : 'Iniciar Sesión'}
                 </h2>
-
                 {error && (
                     <div className="mb-4 p-3 bg-red-900/20 border border-red-600 text-red-400 rounded">
                         {error}
                     </div>
                 )}
-
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <input
                         type="email"
@@ -69,7 +61,6 @@ export function AuthForm({ signIn, signUp, signInWithGoogle }: AuthFormProps) {
                         minLength={6}
                         disabled={loading}
                     />
-
                     <button
                         type="submit"
                         disabled={loading}
@@ -78,7 +69,6 @@ export function AuthForm({ signIn, signUp, signInWithGoogle }: AuthFormProps) {
                         {loading ? 'Procesando...' : (isSignUp ? 'Crear Cuenta' : 'Iniciar Sesión')}
                     </button>
                 </form>
-
                 <div className="mt-4">
                     <div className="relative">
                         <div className="absolute inset-0 flex items-center">
@@ -88,7 +78,6 @@ export function AuthForm({ signIn, signUp, signInWithGoogle }: AuthFormProps) {
                             <span className="px-2 bg-backgroundPrimary text-gray-400">o</span>
                         </div>
                     </div>
-
                     <button
                         onClick={signInWithGoogle}
                         disabled={loading}
@@ -103,7 +92,6 @@ export function AuthForm({ signIn, signUp, signInWithGoogle }: AuthFormProps) {
                         Continuar con Google
                     </button>
                 </div>
-
                 <p className="mt-4 text-center text-gray-300">
                     {isSignUp ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?'}
                     <button

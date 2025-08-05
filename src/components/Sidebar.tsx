@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { Folder, List } from '../lib/supabase'
-
 interface SidebarProps {
     sidebarOpen: boolean
     setSidebarOpen: (open: boolean) => void
@@ -16,7 +15,6 @@ interface SidebarProps {
     selectedList: string | null
     setSelectedList: (listId: string | null) => void
 }
-
 export function Sidebar({
                             sidebarOpen,
                             setSidebarOpen,
@@ -36,9 +34,6 @@ export function Sidebar({
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
     const [showFolderForm, setShowFolderForm] = useState(false)
     const [showListForm, setShowListForm] = useState<string | null>(null)
-
-    console.log('Sidebar render - folders:', folders) // Debug
-
     const toggleFolder = (folderId: string) => {
         const newExpanded = new Set(expandedFolders)
         if (newExpanded.has(folderId)) {
@@ -48,27 +43,20 @@ export function Sidebar({
         }
         setExpandedFolders(newExpanded)
     }
-
     const handleAddFolder = async (e: React.FormEvent) => {
         e.preventDefault()
-        console.log('handleAddFolder called with:', newFolderName) // Debug
-
         if (newFolderName.trim()) {
             try {
                 await addFolder(newFolderName.trim())
                 setNewFolderName('')
                 setShowFolderForm(false)
-                console.log('Folder created successfully') // Debug
             } catch (error) {
                 console.error('Error creating folder:', error)
             }
         }
     }
-
     const handleAddList = async (e: React.FormEvent, folderId: string) => {
         e.preventDefault()
-        console.log('handleAddList called with:', newListName, folderId) // Debug
-
         if (newListName.trim()) {
             try {
                 await addList(newListName.trim(), folderId)
@@ -80,22 +68,17 @@ export function Sidebar({
             }
         }
     }
-
     const getListsForFolder = (folderId: string) => {
         return lists.filter(list => list.folder_id === folderId)
     }
-
     return (
         <>
-            {/* Overlay móvil */}
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
-
-            {/* Sidebar */}
             <div className={`
                 fixed lg:static inset-y-0 left-0 z-50
                 w-64 bg-backgroundSecondary border-r border-neutral
@@ -103,7 +86,6 @@ export function Sidebar({
                 lg:translate-x-0 transition-transform duration-200 ease-in-out
                 flex flex-col
             `}>
-                {/* Header */}
                 <div className="p-4 border-b border-neutral">
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-bold text-primary">TaskManager</h2>
@@ -116,8 +98,6 @@ export function Sidebar({
                     </div>
                     <p className="text-sm text-gray-400 mt-1">{user.email}</p>
                 </div>
-
-                {/* Folders and Lists */}
                 <div className="flex-1 overflow-y-auto p-4">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">
@@ -125,7 +105,6 @@ export function Sidebar({
                         </h3>
                         <button
                             onClick={() => {
-                                console.log('Add folder button clicked') // Debug
                                 setShowFolderForm(true)
                             }}
                             className="text-primary hover:text-secondary text-sm font-medium px-2 py-1 rounded hover:bg-primary/10 transition-colors"
@@ -134,8 +113,6 @@ export function Sidebar({
                             + Carpeta
                         </button>
                     </div>
-
-                    {/* Nueva carpeta form */}
                     {showFolderForm && (
                         <div className="mb-4 p-3 bg-backgroundPrimary rounded-lg border border-neutral">
                             <form onSubmit={handleAddFolder}>
@@ -171,17 +148,12 @@ export function Sidebar({
                             </form>
                         </div>
                     )}
-
-                    {/* Debug info */}
                     <div className="mb-2 text-xs text-gray-500">
                         Carpetas: {folders.length} | Listas: {lists.length}
                     </div>
-
-                    {/* Folders */}
                     <div className="space-y-2">
                         {folders.map((folder) => (
                             <div key={folder.id} className="border border-neutral rounded-lg overflow-hidden">
-                                {/* Folder header */}
                                 <div className="flex items-center justify-between p-3 bg-backgroundPrimary hover:bg-gray-700/50 transition-colors group">
                                     <div
                                         className="flex items-center gap-2 flex-1 cursor-pointer"
@@ -212,11 +184,8 @@ export function Sidebar({
                                         🗑
                                     </button>
                                 </div>
-
-                                {/* Lists inside folder */}
                                 {expandedFolders.has(folder.id) && (
                                     <div className="bg-backgroundSecondary">
-                                        {/* Add list button */}
                                         <div className="p-2 border-b border-neutral">
                                             <button
                                                 onClick={() => setShowListForm(folder.id)}
@@ -225,8 +194,6 @@ export function Sidebar({
                                                 + Agregar lista
                                             </button>
                                         </div>
-
-                                        {/* Nueva lista form */}
                                         {showListForm === folder.id && (
                                             <div className="p-3 border-b border-neutral">
                                                 <form onSubmit={(e) => handleAddList(e, folder.id)}>
@@ -259,8 +226,6 @@ export function Sidebar({
                                                 </form>
                                             </div>
                                         )}
-
-                                        {/* Lists */}
                                         {getListsForFolder(folder.id).map((list) => (
                                             <div
                                                 key={list.id}
@@ -290,7 +255,6 @@ export function Sidebar({
                                                 </button>
                                             </div>
                                         ))}
-
                                         {getListsForFolder(folder.id).length === 0 && showListForm !== folder.id && (
                                             <div className="p-3 text-center text-gray-400 text-sm">
                                                 No hay listas en esta carpeta
@@ -300,7 +264,6 @@ export function Sidebar({
                                 )}
                             </div>
                         ))}
-
                         {folders.length === 0 && !showFolderForm && (
                             <div className="text-center py-8">
                                 <div className="text-4xl mb-2">📁</div>
@@ -310,8 +273,6 @@ export function Sidebar({
                         )}
                     </div>
                 </div>
-
-                {/* Footer */}
                 <div className="p-4 border-t border-neutral">
                     <button
                         onClick={signOut}
@@ -321,8 +282,6 @@ export function Sidebar({
                     </button>
                 </div>
             </div>
-
-            {/* Toggle button para móvil */}
             <button
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden fixed top-4 left-4 z-30 bg-primary text-background p-2 rounded-md shadow-lg"

@@ -1,15 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
-
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
 if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Missing Supabase environment variables')
 }
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-// Tipos para la base de datos
 export interface Folder {
     id: string
     user_id: string
@@ -18,7 +13,6 @@ export interface Folder {
     created_at: string
     updated_at: string
 }
-
 export interface List {
     id: string
     user_id: string
@@ -28,7 +22,6 @@ export interface List {
     created_at: string
     updated_at: string
 }
-
 export interface Task {
     id: string
     user_id: string
@@ -40,7 +33,6 @@ export interface Task {
     created_at: string
     updated_at: string
 }
-
 export interface CalendarEvent {
     id: string
     user_id: string
@@ -53,8 +45,6 @@ export interface CalendarEvent {
     created_at: string
     updated_at: string
 }
-
-// Funciones de autenticación mejoradas
 export const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -65,7 +55,6 @@ export const signInWithGoogle = async () => {
     })
     return { data, error }
 }
-
 export const signInWithEmail = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -73,7 +62,6 @@ export const signInWithEmail = async (email: string, password: string) => {
     })
     return { data, error }
 }
-
 export const signUpWithEmail = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({
         email,
@@ -81,14 +69,10 @@ export const signUpWithEmail = async (email: string, password: string) => {
     })
     return { data, error }
 }
-
-// Función para obtener el token de Google
 export const getGoogleToken = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     return session?.provider_token || null
 }
-
-// Función para refrescar la sesión
 export const refreshSession = async () => {
     const { data, error } = await supabase.auth.refreshSession()
     return { data, error }

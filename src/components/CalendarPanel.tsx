@@ -2,46 +2,34 @@ import React, { useState, useEffect } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { useGoogleCalendar } from '../hooks/useGoogleCalendar'
-
 type ViewType = 'month' | 'week' | 'day'
-
 interface CalendarPanelProps {
     user: User
 }
-
 export function CalendarPanel({ user }: CalendarPanelProps) {
     const [accessToken, setAccessToken] = useState<string | null>(null)
     const [currentDate, setCurrentDate] = useState(new Date())
     const [viewType, setViewType] = useState<ViewType>('month')
-
-    // Obtener token de Google
     useEffect(() => {
         const getSession = async () => {
             const { data: { session } } = await supabase.auth.getSession()
             setAccessToken(session?.provider_token ?? null)
         }
         getSession()
-
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (event, session) => {
                 setAccessToken(session?.provider_token ?? null)
             }
         )
-
         return () => subscription.unsubscribe()
     }, [])
-
     const { isLoaded, events, loading, error } = useGoogleCalendar(accessToken)
-
-    // Función para obtener eventos del día específico
     const getEventsForDay = (targetDate: Date) => {
         if (!events) return []
-
         const dayStart = new Date(targetDate)
         dayStart.setHours(0, 0, 0, 0)
         const dayEnd = new Date(targetDate)
         dayEnd.setHours(23, 59, 59, 999)
-
         return events.filter(event => {
             let eventDate
             if (event.start.dateTime) {
@@ -51,7 +39,6 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
             } else {
                 return false
             }
-
             return eventDate >= dayStart && eventDate <= dayEnd
         }).sort((a, b) => {
             const timeA = a.start.dateTime ? new Date(a.start.dateTime) : new Date(a.start.date + 'T00:00:00')
@@ -59,8 +46,6 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
             return timeA.getTime() - timeB.getTime()
         })
     }
-
-    // Generar días del mes
     const generateCalendarDays = () => {
         const year = currentDate.getFullYear()
         const month = currentDate.getMonth()
@@ -68,45 +53,31 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
         const lastDay = new Date(year, month + 1, 0)
         const daysInMonth = lastDay.getDate()
         const startingDayOfWeek = (firstDay.getDay() + 6) % 7 // Lunes = 0
-
         const days = []
-
-        // Días en blanco al inicio
         for (let i = 0; i < startingDayOfWeek; i++) {
             days.push(null)
         }
-
-        // Días del mes
         for (let day = 1; day <= daysInMonth; day++) {
             days.push(day)
         }
-
-        // Completar hasta 42 días (6 semanas)
         while (days.length < 42) {
             days.push(null)
         }
-
         return days
     }
-
-    // Generar días de la semana
     const generateWeekDays = () => {
         const startOfWeek = new Date(currentDate)
         const day = startOfWeek.getDay()
         const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1) // Ajustar para que lunes sea el primer día
         startOfWeek.setDate(diff)
-
         const weekDays = []
         for (let i = 0; i < 7; i++) {
             const date = new Date(startOfWeek)
             date.setDate(startOfWeek.getDate() + i)
             weekDays.push(date)
         }
-
         return weekDays
     }
-
-    // Generar horas del día
     const generateHours = () => {
         const hours = []
         for (let i = 0; i < 24; i++) {
@@ -114,7 +85,6 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
         }
         return hours
     }
-
     const navigate = (direction: 'prev' | 'next') => {
         setCurrentDate(prev => {
             const newDate = new Date(prev)
@@ -132,17 +102,14 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
             return newDate
         })
     }
-
     const goToToday = () => {
         setCurrentDate(new Date())
     }
-
     const getViewTitle = () => {
         const monthNames = [
             'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
             'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
         ]
-
         switch (viewType) {
             case 'month':
                 return `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
@@ -164,41 +131,30 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
                 return ''
         }
     }
-
     const today = new Date()
-
-    // Renderizar vista mensual
     const renderMonthView = () => {
         const calendarDays = generateCalendarDays()
-
         return (
             <div className="grid grid-cols-7 gap-1 h-full">
-                {/* Cabeceras de días */}
                 {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
                     <div key={day} className="p-2 text-center font-semibold text-primary border-b border-neutral">
                         {day}
                     </div>
                 ))}
-
-                {/* Días del calendario */}
                 {calendarDays.map((day, index) => {
                     if (!day) {
                         return <div key={index} className="p-2 border border-neutral bg-backgroundSecondary opacity-30"></div>
                     }
-
                     const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
                     const dayEvents = getEventsForDay(dayDate)
                     const isToday = today.getDate() === day &&
                         today.getMonth() === currentDate.getMonth() &&
                         today.getFullYear() === currentDate.getFullYear()
-
                     return (
                         <div key={index} className={`p-2 border border-neutral bg-backgroundSecondary hover:bg-primary/10 transition-colors cursor-pointer relative ${isToday ? 'ring-2 ring-primary' : ''}`}>
                             <span className={`text-sm font-medium ${isToday ? 'text-primary font-bold' : 'text-white'}`}>
                                 {day}
                             </span>
-
-                            {/* Mostrar eventos de Google Calendar */}
                             <div className="mt-1 space-y-1">
                                 {dayEvents.slice(0, 3).map((event, eventIndex) => (
                                     <div
@@ -209,8 +165,6 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
                                         {event.summary || 'Evento'}
                                     </div>
                                 ))}
-
-                                {/* Indicador si hay más eventos */}
                                 {dayEvents.length > 3 && (
                                     <div className="text-xs text-gray-300 text-center">
                                         +{dayEvents.length - 3} más
@@ -223,15 +177,11 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
             </div>
         )
     }
-
-    // Renderizar vista semanal
     const renderWeekView = () => {
         const weekDays = generateWeekDays()
         const hours = generateHours()
-
         return (
             <div className="h-full flex flex-col">
-                {/* Cabecera de días */}
                 <div className="grid grid-cols-8 border-b border-neutral">
                     <div className="p-2 border-r border-neutral"></div>
                     {weekDays.map((date, index) => {
@@ -248,11 +198,8 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
                         )
                     })}
                 </div>
-
-                {/* Contenido de horas */}
                 <div className="flex-1 overflow-y-auto">
                     <div className="grid grid-cols-8">
-                        {/* Columna de horas */}
                         <div className="border-r border-neutral">
                             {hours.map(hour => (
                                 <div key={hour} className="h-16 p-1 border-b border-neutral text-xs text-gray-300 text-right">
@@ -260,23 +207,19 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
                                 </div>
                             ))}
                         </div>
-
-                        {/* Columnas de días */}
                         {weekDays.map((date, dayIndex) => {
                             const dayEvents = getEventsForDay(date)
                             const isToday = today.toDateString() === date.toDateString()
-
                             return (
                                 <div key={dayIndex} className={`border-r border-neutral ${isToday ? 'bg-primary/5' : ''}`}>
                                     {hours.map(hour => (
                                         <div key={hour} className="h-16 border-b border-neutral relative p-1">
-                                            {/* Eventos en esta hora */}
                                             {dayEvents.filter(event => {
                                                 if (event.start.dateTime) {
                                                     const eventHour = new Date(event.start.dateTime).getHours()
                                                     return eventHour === hour
                                                 }
-                                                return hour === 0 && event.start.date // Eventos de día completo
+                                                return hour === 0 && event.start.date
                                             }).map(event => (
                                                 <div
                                                     key={event.id}
@@ -296,15 +239,11 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
             </div>
         )
     }
-
-    // Renderizar vista diaria
     const renderDayView = () => {
         const hours = generateHours()
         const dayEvents = getEventsForDay(currentDate)
-
         return (
             <div className="h-full flex flex-col">
-                {/* Cabecera del día */}
                 <div className="border-b border-neutral p-4">
                     <div className="text-center">
                         <div className="text-sm text-gray-300">
@@ -315,8 +254,6 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
                         </div>
                     </div>
                 </div>
-
-                {/* Lista de eventos del día */}
                 {dayEvents.length > 0 && (
                     <div className="border-b border-neutral p-4">
                         <h4 className="text-sm font-semibold text-primary mb-2">Eventos del día</h4>
@@ -337,11 +274,8 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
                         </div>
                     </div>
                 )}
-
-                {/* Contenido de horas */}
                 <div className="flex-1 overflow-y-auto">
                     <div className="grid grid-cols-2">
-                        {/* Columna de horas */}
                         <div className="border-r border-neutral">
                             {hours.map(hour => (
                                 <div key={hour} className="h-16 p-2 border-b border-neutral text-sm text-gray-300">
@@ -349,18 +283,15 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
                                 </div>
                             ))}
                         </div>
-
-                        {/* Columna de eventos */}
                         <div>
                             {hours.map(hour => (
                                 <div key={hour} className="h-16 border-b border-neutral p-2">
-                                    {/* Eventos en esta hora */}
                                     {dayEvents.filter(event => {
                                         if (event.start.dateTime) {
                                             const eventHour = new Date(event.start.dateTime).getHours()
                                             return eventHour === hour
                                         }
-                                        return hour === 0 && event.start.date // Eventos de día completo
+                                        return hour === 0 && event.start.date
                                     }).map(event => (
                                         <div
                                             key={event.id}
@@ -377,7 +308,6 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
             </div>
         )
     }
-
     return (
         <div className="flex-1 flex flex-col bg-backgroundSecondary">
             <div className="p-6 border-b border-neutral">
@@ -418,8 +348,6 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
                         </select>
                     </div>
                 </div>
-
-                {/* Indicador de conexión con Google Calendar */}
                 <div className="mt-2 flex items-center space-x-2">
                     <div className={`w-2 h-2 rounded-full ${accessToken ? 'bg-green-500' : 'bg-red-500'}`}></div>
                     <span className="text-sm text-gray-300">
@@ -429,7 +357,6 @@ export function CalendarPanel({ user }: CalendarPanelProps) {
                     {error && <span className="text-sm text-red-400">{error}</span>}
                 </div>
             </div>
-
             <div className="flex-1 p-6">
                 <div className="h-full bg-backgroundPrimary rounded-lg border border-neutral p-4">
                     {viewType === 'month' && renderMonthView()}
